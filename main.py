@@ -11,15 +11,23 @@ class Application(BaseModel):
     status: str
 
 applications = [
-    {"role": "Backend Developer" , "company": "Sage", "location": "Newcastle", "salary":"£30,000", "status": "Ongoing"}, 
-    {"role": "Software Engineer" , "company": "Amazon", "location": "London", "salary":"£45,000", "status": "Declined"}
+    {"id": 1, "role": "Backend Developer" , "company": "Sage", "location": "Newcastle", "salary":"£30,000", "status": "Ongoing"}, 
+    {"id": 2, "role": "Software Engineer" , "company": "Amazon", "location": "London", "salary":"£45,000", "status": "Declined"}
     ]
 
 @app.get("/applications")
 async def get_applications():
     return applications
 
+
+
 @app.post("/applications")
 async def create_application(application: Application):
-    applications.append(application.dict())
-    return application
+    ids = []
+    for app in applications:
+        ids.append(app["id"])
+    new_id = max(ids) + 1
+    save_id = application.dict()
+    save_id["id"] = new_id
+    applications.append(save_id)
+    return save_id
