@@ -41,3 +41,11 @@ async def update_app(application_id: int, status_update: StatusUpdate):
         if n["id"] == application_id:
             n["status"] = status_update.status
             return n
+
+@app.delete("/applications/{application_id}")
+async def delete_app(application_id: int):
+    for n in applications:
+        if n["id"] == application_id:
+            applications.remove(n)
+            return {"message": "Application deleted successfully"}
+    return {"message": "Application not found"}
