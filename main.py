@@ -1,9 +1,11 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
+from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 app = FastAPI()
 
-class Application(BaseModel):
+class Application(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
     role: str
     company: str
     location: str
@@ -12,6 +14,20 @@ class Application(BaseModel):
 
 class StatusUpdate (BaseModel):
     status : str
+
+
+sqlite_file_name = "applications.db"
+sqlite_url = f"sqlite:///{sqlite_file_name}"
+connect_args = {"check_same_thread": False}
+engine = create_engine(sqlite_url, connect_args=connect_args)
+
+def create_db_and_tables():
+    SQLModel.metadata.create_all(engine)
+
+@app.on_event("startup")
+def on_startup():
+    create_db_and_tables()
+
 
 applications = [
     {"id": 1, "role": "Backend Developer" , "company": "Sage", "location": "Newcastle", "salary":"£30,000", "status": "Ongoing"}, 
