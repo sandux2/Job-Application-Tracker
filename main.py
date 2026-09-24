@@ -1,6 +1,7 @@
-from fastapi import FastAPI
 from pydantic import BaseModel
 from sqlmodel import Field, Session, SQLModel, create_engine, select
+from typing import Annotated
+from fastapi import Depends, FastAPI, HTTPException, Query
 
 app = FastAPI()
 
@@ -21,6 +22,12 @@ sqlite_url = f"sqlite:///{sqlite_file_name}"
 connect_args = {"check_same_thread": False}
 engine = create_engine(sqlite_url, connect_args=connect_args)
 
+def get_session():
+    with Session(engine) as session:
+        yield session
+
+SessionDep = Annotated[Session, Depends(get_session)]
+
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
 
@@ -35,21 +42,18 @@ applications = [
     ]
 
 @app.get("/applications")
-async def get_applications():
-    return applications
+async def get_applications(session: SessionDep):
+    return session.exec(select(Application)).all()
 
 
 
 @app.post("/applications")
-async def create_application(application: Application):
-    ids = []
-    for app in applications:
-        ids.append(app["id"])
-    new_id = max(ids) + 1
-    save_id = application.dict()
-    save_id["id"] = new_id
-    applications.append(save_id)
-    return save_id
+async def create_application(application: Application, session: SessionDep):
+    session.add(application)
+    session.commit()
+    session.refresh(application)
+    return application
+   
 
 @app.put("/applications/{application_id}")
 async def update_app(application_id: int, status_update: StatusUpdate):
