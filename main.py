@@ -56,11 +56,17 @@ async def create_application(application: Application, session: SessionDep):
    
 
 @app.put("/applications/{application_id}")
-async def update_app(application_id: int, status_update: StatusUpdate):
-    for n in applications:
-        if n["id"] == application_id:
-            n["status"] = status_update.status
-            return n
+async def update_app(application_id: int, status_update: StatusUpdate, session: SessionDep):
+    application = session.get(Application, application_id)
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+    application.status = status_update.status
+    session.add(application)
+    session.commit()
+    session.refresh(application)
+    return application
+
+    
 
 @app.delete("/applications/{application_id}")
 async def delete_app(application_id: int):
