@@ -69,9 +69,11 @@ async def update_app(application_id: int, status_update: StatusUpdate, session: 
     
 
 @app.delete("/applications/{application_id}")
-async def delete_app(application_id: int):
-    for n in applications:
-        if n["id"] == application_id:
-            applications.remove(n)
-            return {"message": "Application deleted successfully"}
-    return {"message": "Application not found"}
+async def delete_app(application_id: int, session: SessionDep):
+    application = session.get(Application, application_id)
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+    session.delete(application)
+    session.commit()
+    return {"message": "Application deleted successfully"}
+    
