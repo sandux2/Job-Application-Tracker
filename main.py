@@ -1,9 +1,19 @@
 from pydantic import BaseModel
+from enum import Enum
 from sqlmodel import Field, Session, SQLModel, create_engine, select
 from typing import Annotated
 from fastapi import Depends, FastAPI, HTTPException, Query
 
 app = FastAPI()
+
+class Status(str, Enum):
+    in_process = "In Process"
+    declined = "Declined"
+    accepted = "Accepted"
+    stage_1 = "Stage 1"
+    stage_2 = "Stage 2"
+    stage_3 = "Stage 3"
+
 
 class Application(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
@@ -11,10 +21,17 @@ class Application(SQLModel, table=True):
     company: str
     location: str
     salary: str
-    status: str
+    status: Status
+
+class ApplicationCreate(BaseModel):
+    role: str
+    company: str
+    location: str
+    salary: str
+    status: Status
 
 class StatusUpdate (BaseModel):
-    status : str
+    status : Status
 
 
 sqlite_file_name = "applications.db"
@@ -36,10 +53,6 @@ def on_startup():
     create_db_and_tables()
 
 
-applications = [
-    {"id": 1, "role": "Backend Developer" , "company": "Sage", "location": "Newcastle", "salary":"£30,000", "status": "Ongoing"}, 
-    {"id": 2, "role": "Software Engineer" , "company": "Amazon", "location": "London", "salary":"£45,000", "status": "Declined"}
-    ]
 
 @app.get("/applications")
 async def get_applications(session: SessionDep):
@@ -48,11 +61,12 @@ async def get_applications(session: SessionDep):
 
 
 @app.post("/applications")
-async def create_application(application: Application, session: SessionDep):
-    session.add(application)
+async def create_application(application: ApplicationCreate, session: SessionDep):
+    db_application = Application.model_validate(application)
+    session.add(db_application)
     session.commit()
-    session.refresh(application)
-    return application
+    session.refresh(db_application)
+    return db_application
    
 
 @app.put("/applications/{application_id}")
