@@ -35,3 +35,22 @@ def test_post_application_invalid_status():
     }
     response = client.post("/applications", json=application_data)
     assert response.status_code == 422  # Unprocessable Entity
+
+def test_put_application_status():
+        application_data = {
+            "role": "Test Role",
+            "company": "Test Company",
+            "location": "Test Location",
+            "salary": "Test Salary",
+            "status": "In Process"
+        }
+        response = client.post("/applications", json=application_data)
+        assert response.status_code == 200
+        application_id = response.json()["id"]
+
+        status_update_data = {
+            "status": "Accepted"
+        }
+        response = client.put(f"/applications/{application_id}", json=status_update_data)
+        assert response.status_code == 200
+        assert response.json()["status"] == status_update_data["status"]
